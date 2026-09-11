@@ -46,6 +46,35 @@ const ICON = {
   orbit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><ellipse cx="12" cy="12" rx="10.2" ry="4.6" transform="rotate(-24 12 12)"/><circle cx="21" cy="8.2" r="1.5" fill="currentColor" stroke="none"/></svg>`,
 }
 
+/**
+ * The first-run walkthrough — a handful of short steps rather than the full shortcut sheet,
+ * because a brand new visitor has no context yet for a two-column list of keybindings. `?`
+ * still opens that sheet any time; this is the one-time "what am I looking at" instead.
+ */
+const TOUR_STEPS = [
+  {
+    title: 'Your colony',
+    body: 'Every coding-agent thread on this machine — Claude Code, Codex, Gemini, Cursor — is down there right now. This is what they’re all doing, at once.',
+  },
+  {
+    title: 'One zone, one repo',
+    body: 'Each patch of ground is a repo. Bigger repos claim more tiles. Click a zone, or pick a repo from the sidebar, to see every thread inside it.',
+  },
+  {
+    title: 'Read the colony at a glance',
+    body: 'Hammering and sparking means a thread is working right now. Standing still with a <b>?</b> overhead means it’s waiting on you — click it to open the thread back where it came from.',
+  },
+  {
+    title: 'Act on a repo',
+    body: 'Open a repo in the sidebar to start a fresh conversation in its folder, reveal it in your file manager, or hide it from the colony — none of that touches anything in your harness.',
+  },
+  {
+    title: 'Look around',
+    body: 'Drag the ground to move, scroll to zoom in on whatever’s under the cursor, right-drag to tilt. Press <kbd>?</kbd> any time for the full shortcut list.',
+    cta: 'Let’s go',
+  },
+]
+
 const STAT_DEFS = [
   { key: 'working', label: 'building', cls: 'working' },
   { key: 'waiting', label: 'need you', cls: 'waiting' },
@@ -69,9 +98,12 @@ export class Hud {
 
     this.$ = (sel) => this.el.querySelector(sel)
 
+    this.tourStep = 0
+
     this._buildStats()
     this._buildSettings()
     this._buildAvatar()
+    this._buildTour()
     this._wire()
     this.syncSettings()
   }
@@ -346,6 +378,15 @@ export class Hud {
     this._avatarState = { frame: -1, color: '' }
   }
 
+  /** Builds the dot track once; content per step is filled in by `_renderTourStep()`. */
+  _buildTour() {
+    const dots = this.$('.tour-dots')
+    for (let i = 0; i < TOUR_STEPS.length; i++) {
+      const dot = document.createElement('i')
+      dots.appendChild(dot)
+    }
+  }
+
   _wire() {
     const on = (sel, ev, fn) => this.$(sel).addEventListener(ev, fn)
 
@@ -353,6 +394,16 @@ export class Hud {
     on('#btn-close-settings', 'click', () => this.toggleSettings(false))
     on('#btn-hide', 'click', () => this.toggleUi())
     on('#btn-help', 'click', () => this.toggleHelp())
+    on('#btn-tour-skip', 'click', () => this.toggleTour(false))
+    on('#btn-tour-back', 'click', () => this._renderTourStep(this.tourStep - 1))
+    on('#btn-tour-next', 'click', () => {
+      if (this.tourStep >= TOUR_STEPS.length - 1) this.toggleTour(false)
+      else this._renderTourStep(this.tourStep + 1)
+    })
+    on('#btn-replay-tour', 'click', () => {
+      this.toggleHelp(false)
+      this.toggleTour(true)
+    })
     on('#btn-shot', 'click', () => this.actions.screenshot?.())
     on('#btn-home', 'click', () => this.actions.resetView?.())
     on('#btn-next', 'click', () => this.actions.focusStatus?.('waiting'))
@@ -769,6 +820,25 @@ export class Hud {
     el.classList.toggle('open', open)
   }
 
+  /** The first-run walkthrough. Opening it always starts back at step one. */
+  toggleTour(force) {
+    const el = this.$('.tour')
+    const open = force ?? !el.classList.contains('open')
+    if (open) this._renderTourStep(0)
+    el.classList.toggle('open', open)
+  }
+
+  _renderTourStep(i) {
+    this.tourStep = Math.max(0, Math.min(TOUR_STEPS.length - 1, i))
+    const step = TOUR_STEPS[this.tourStep]
+    this.$('.tour-title').textContent = step.title
+    this.$('.tour-body').innerHTML = step.body
+    const dots = this.$('.tour-dots').children
+    for (let j = 0; j < dots.length; j++) dots[j].classList.toggle('on', j === this.tourStep)
+    this.$('#btn-tour-back').disabled = this.tourStep === 0
+    this.$('#btn-tour-next').textContent = step.cta || 'Next'
+  }
+
   /**
    * Dismiss everything. This is the mode the game is really meant to be left in — the
    * colony carries its own state above the astronauts' heads, so the panels are for
@@ -986,6 +1056,21 @@ const TEMPLATE = `
 <div class="fps panel"></div>
 <div class="hint-pill panel"></div>
 
+<div class="tour">
+  <div class="tour-card sheet panel">
+    <div class="tour-dots"></div>
+    <h2 class="tour-title"></h2>
+    <p class="tour-body"></p>
+    <div class="tour-foot">
+      <button class="btn ghost" id="btn-tour-skip">Skip</button>
+      <div class="tour-nav">
+        <button class="btn icon ghost" id="btn-tour-back" title="Back">${ICON.back}</button>
+        <button class="btn primary" id="btn-tour-next">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="help">
   <div class="sheet panel">
     <h2>Bot Crossing</h2>
@@ -1022,7 +1107,8 @@ const TEMPLATE = `
       <div class="legend-row"><i class="badge" style="background:#332b12;color:#e6c67f">✓</i> its pull request landed</div>
       <div class="legend-row"><i class="badge" style="background:#1d1f2e;color:#a9a8c0">z</i> nothing for three days</div>
     </div>
-    <div style="margin-top:18px;display:flex;justify-content:flex-end">
+    <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center">
+      <button type="button" class="help-replay" id="btn-replay-tour">Replay the tour</button>
       <button class="btn primary" id="btn-help-close">Got it</button>
     </div>
   </div>

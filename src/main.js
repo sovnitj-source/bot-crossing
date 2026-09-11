@@ -716,9 +716,9 @@ async function boot() {
     if (!document.hidden) poll()
   })
 
-  if (!localStorage.getItem('botcrossing.seen-help')) {
-    hud.toggleHelp(true)
-    localStorage.setItem('botcrossing.seen-help', '1')
+  if (!localStorage.getItem('botcrossing.seen-tour')) {
+    hud.toggleTour(true)
+    localStorage.setItem('botcrossing.seen-tour', '1')
   } else {
     hud.hint('Drag to move · click an astronaut · H hides everything', 5200)
   }

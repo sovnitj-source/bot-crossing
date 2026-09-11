@@ -1293,6 +1293,93 @@ kbd {
   flex: none;
 }
 
+/* ── tour ────────────────────────────────────────────────────────────────────────── */
+
+.tour {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  background: rgba(6, 7, 11, 0.72);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.tour.open {
+  display: grid;
+}
+
+.tour-card {
+  width: min(420px, calc(100vw - 40px));
+  padding: 22px 24px;
+}
+
+.tour-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tour-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.tour-dots i.on {
+  background: var(--accent);
+}
+
+.tour-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.tour-body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.tour-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.tour-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.tour-nav #btn-tour-back[disabled] {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.tour-nav #btn-tour-next {
+  min-width: 84px;
+}
+
+.help-replay {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.help-replay:hover {
+  color: var(--text);
+}
+
 /* ── hint pill ───────────────────────────────────────────────────────────────────── */
 
 .hint-pill {
